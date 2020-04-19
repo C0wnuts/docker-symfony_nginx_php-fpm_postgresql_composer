@@ -1,0 +1,51 @@
+version: "3.7"
+
+services:
+  
+  pgsql:
+    container_name: pgsql
+    image: postgres
+    environment:
+      - POSTGRES_DB=db_prod
+      - POSTGRES_USER=user_prod
+      - POSTGRES_PASSWORD=pass_prod
+      - TZ=GMT
+    volumes:
+      - ../db-data:/var/lib/postgresql/data
+      - ../pgsql:/opt
+    networks:
+      - pgsql
+  
+  php-fpm:
+    container_name: php-fpm
+    build: ./php-fpm
+    volumes:
+      - ../src:/var/www/
+    environment:
+      - APP_ENV=prod
+      - APP_DEBUG=0
+    depends_on:
+      - pgsql
+    networks:
+      - pgsql
+      - php-fpm
+
+  nginx:
+    container_name: nginx
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on: 
+      - php-fpm
+    networks:
+      - php-fpm
+    volumes:
+      - ../src:/var/www
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/sites/:/etc/nginx/sites-available
+      - ./nginx/conf.d/:/etc/nginx/conf.d
+      
+
+networks:
+  pgsql:
+  php-fpm:
